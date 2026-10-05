@@ -1,0 +1,13 @@
+.git
+.github
+.env
+certs
+data
+diagnostics-*.txt
+docs
+snapshots
+KNOWN_WORKING_STATE.md
+PROTOCOL_NOTES.md
+compose.ans-relay.yml
+pf*.conf
+*.pcap

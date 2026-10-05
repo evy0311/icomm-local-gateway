@@ -1,0 +1,65 @@
+name: Bug report
+description: Report a reproducible problem on hardware already listed as supported
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Remove private data before submitting. Never attach `.env`, private keys, DSNs, MAC addresses, cloud device IDs, credentials, or unredacted captures.
+  - type: input
+    id: model
+    attributes:
+      label: Heater model
+      placeholder: Full public model number, not serial number
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Reported firmware
+      placeholder: Version shown by the app or appliance
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Gateway platform
+      options:
+        - macOS Internet Sharing
+        - macOS with another network topology
+        - Linux/router
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include command state and timestamps when relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized diagnostics
+      description: Paste or attach the manually reviewed output from `node scripts/collect-diagnostics.mjs`.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy and safety checks
+      options:
+        - label: I reviewed the entire report and removed unique device/network identifiers and secrets.
+          required: true
+        - label: I can still control the heater safely from its physical panel.
+          required: true

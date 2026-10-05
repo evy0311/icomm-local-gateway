@@ -1,0 +1,17 @@
+.DS_Store
+.env
+certs/*.crt
+certs/*.key
+data/
+diagnostics-*.txt
+node_modules/
+pf-local-only.generated.conf
+
+# Private prototype/research artifacts retained locally but never published.
+KNOWN_WORKING_STATE.md
+PROTOCOL_NOTES.md
+compose.ans-relay.yml
+pf.conf
+pf-local-only.conf
+pf-poll-test.conf
+snapshots/

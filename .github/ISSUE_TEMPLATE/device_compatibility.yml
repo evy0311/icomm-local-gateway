@@ -1,0 +1,76 @@
+name: Device compatibility report
+description: Share sanitized results from testing another iCOMM heater
+title: "[Device]: "
+labels: [compatibility]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Follow `docs/testing-new-heaters.md` and start read-only. Do not publish a serial number, DSN, MAC, Ayla device ID, account data, private key, raw ANS datagram, or unredacted packet capture.
+  - type: input
+    id: model
+    attributes:
+      label: Manufacturer and full model
+      placeholder: Public model number only
+    validations:
+      required: true
+  - type: input
+    id: type
+    attributes:
+      label: Heater type
+      placeholder: Electric resistance, hybrid/heat pump, gas, etc.
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Reported iCOMM firmware
+  - type: input
+    id: region
+    attributes:
+      label: Country or region
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Furthest completed test phase
+      options:
+        - "A: network and TLS"
+        - "B: telemetry compared with physical panel"
+        - "C: conservative command physically verified"
+    validations:
+      required: true
+  - type: textarea
+    id: tls
+    attributes:
+      label: TLS and HTTP result
+      description: Did Apache log an HTTP request, a reset, or no connection?
+    validations:
+      required: true
+  - type: textarea
+    id: telemetry
+    attributes:
+      label: Telemetry result
+      description: Report decoded values or the sanitized segment sizes/error. Do not paste raw telemetry.
+    validations:
+      required: true
+  - type: textarea
+    id: commands
+    attributes:
+      label: Command result, if Phase C was reached
+      description: Include requested value, physical result, acknowledgement, confirmation, and approximate delay.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized diagnostics
+      description: Paste or attach the manually reviewed diagnostic bundle.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Required checks
+      options:
+        - label: I own or am authorized to test this heater and network.
+          required: true
+        - label: I verified the heater remained controllable from its physical panel.
+          required: true
+        - label: I reviewed this report for identifiers, credentials, keys, and other private data.
+          required: true

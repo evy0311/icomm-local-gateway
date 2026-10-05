@@ -1,0 +1,15 @@
+{
+  "name": "icomm-local-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Experimental local-only gateway for A. O. Smith iCOMM water heaters",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check gateway.mjs && node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

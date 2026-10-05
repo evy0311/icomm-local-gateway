@@ -1,0 +1,45 @@
+services:
+  tls-proxy:
+    # Deliberately preserved compatibility stack for the tested legacy module.
+    # Keep this listener on the isolated heater network, never the public Internet.
+    image: httpd:2.4.57-bullseye@sha256:4bdb49b01ab1a7b019410337588f772eebe6ae01d038987aa849fcb798fbf26f
+    container_name: icomm-local-tls
+    depends_on:
+      gateway:
+        condition: service_healthy
+    ports:
+      - "${ICOMM_TLS_PORT:-8443}:443"
+    volumes:
+      - ./apache.conf:/usr/local/apache2/conf/httpd.conf:ro
+      - ./certs/device.crt:/certs/device.crt:ro
+      - ./certs/device.key:/certs/device.key:ro
+    restart: unless-stopped
+
+  gateway:
+    build: .
+    container_name: icomm-local-gateway
+    environment:
+      ICOMM_HEATER_PORT: "8080"
+      ICOMM_ADMIN_PORT: "8081"
+      ICOMM_DNS_PORT: "5353"
+      ICOMM_ANS_PORT: "55055"
+      ICOMM_LOCAL_IP: ${ICOMM_LOCAL_IP:-192.168.2.1}
+      ICOMM_DEVICE_ID: ${ICOMM_DEVICE_ID:-}
+      ICOMM_DNS_CAPTURE_ALL: ${ICOMM_DNS_CAPTURE_ALL:-true}
+      ICOMM_DEBUG_PACKETS: ${ICOMM_DEBUG_PACKETS:-false}
+      ICOMM_DATA_FILE: /data/state.json
+    ports:
+      - "127.0.0.1:${ICOMM_DASHBOARD_PORT:-8788}:8081"
+      - "${ICOMM_DNS_PORT:-1053}:5353/udp"
+      - "${ICOMM_ANS_PORT:-15555}:55055/udp"
+    volumes:
+      - gateway-data:/data
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.mjs"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  gateway-data:
