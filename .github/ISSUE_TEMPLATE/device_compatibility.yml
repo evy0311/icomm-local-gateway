@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Follow `docs/testing-new-heaters.md` and start read-only. Do not publish a serial number, DSN, MAC, Ayla device ID, account data, private key, raw ANS datagram, or unredacted packet capture.
+        Follow `docs/adding-device-support.md` and start read-only. Do not publish a serial number, DSN, MAC, Ayla device ID, account data, private key, raw ANS datagram, or unredacted packet capture.
   - type: input
     id: model
     attributes:
@@ -62,7 +62,7 @@ body:
     id: diagnostics
     attributes:
       label: Sanitized diagnostics
-      description: Paste or attach the manually reviewed diagnostic bundle.
+      description: Paste or attach the manually reviewed minimal diagnostic summary (no raw export).
   - type: checkboxes
     id: checks
     attributes:

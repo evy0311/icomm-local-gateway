@@ -1,0 +1,32 @@
+{
+  "name": "iCOMM Local Gateway",
+  "version": "0.1.0",
+  "slug": "icomm_gateway",
+  "description": "Local A. O. Smith iCOMM heater control, MQTT discovery and private diagnostic captures",
+  "url": "https://github.com/evy0311/icomm-local-gateway",
+  "arch": ["aarch64", "amd64"],
+  "startup": "services",
+  "boot": "auto",
+  "init": true,
+  "stage": "experimental",
+  "ingress": true,
+  "ingress_port": 8081,
+  "panel_icon": "mdi:water-boiler",
+  "panel_title": "iCOMM Gateway",
+  "panel_admin": true,
+  "ports": {"443/tcp": 443, "8082/tcp": 80, "55055/udp": 55055},
+  "ports_description": {"443/tcp": "Heater legacy HTTPS (must be 443 on chosen host)", "8082/tcp": "Heater HTTP (must be 80)", "55055/udp": "Heater notification service"},
+  "watchdog": "http://[HOST]:8081/health",
+  "options": {
+    "mqtt_url": "mqtt://core-mosquitto:1883", "mqtt_username": "", "mqtt_password": "",
+    "device_name": "A. O. Smith water heater", "device_profile": "reselec3",
+    "read_only": true, "gateway_mode": "local", "cloud_host": "",
+    "upstream_dns": "1.1.1.1", "capture_mode": "redacted", "discovery_prefix": "homeassistant"
+  },
+  "schema": {
+    "mqtt_url": "str", "mqtt_username": "str", "mqtt_password": "password",
+    "device_name": "str", "device_profile": "list(reselec3)",
+    "read_only": "bool", "gateway_mode": "list(local|bridge)", "cloud_host": "str?",
+    "upstream_dns": "str", "capture_mode": "list(redacted|full)", "discovery_prefix": "str"
+  }
+}

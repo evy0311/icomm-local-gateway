@@ -1,85 +1,55 @@
 # Architecture
 
-## Traffic flow
+A single gateway instance learns one heater ID and selects one explicit device
+profile. DNS rewrites point the heater's service and notification hosts to the
+Docker host. The gateway is an endpoint replacement, not a DNS server.
 
-```text
-                         loopback only
-                     +------------------+
-                     | browser / API    |
-                     | 127.0.0.1:8788   |
-                     +--------+---------+
-                              |
-heater Wi-Fi                   v
-+------------+        +------------------+       +----------------+
-| iCOMM      | HTTPS  | Apache TLS front | HTTP  | local gateway  |
-| module     +------->+ host :8443       +------>+ container :8080|
-|            |        +------------------+       +----------------+
-|            | DNS/53       | PF redirects       | state + decoder
-|            +------------->+ host UDP :1053     | command queue
-|            | ANS/55055    |                    |
-|            +------------->+ host UDP :15555 ---+ local sink only
-+------------+        +--------------------------+
-      |
-      +---- all other IPv4 traffic is dropped by the heater-scoped PF rule
+```mermaid
+flowchart LR
+  H[Water heater] -->|TCP 443 legacy HTTPS| T[TLS frontend]
+  T -->|HTTP on private Docker network| G[Gateway]
+  H -->|TCP 80 HTTP| G
+  H <-->|UDP 55055 registration / keepalive / notification| G
+  G <-->|MQTT| M[Existing broker]
+  M <--> A[Home Assistant]
+  B[Host browser / SSH tunnel] <-->|Loopback 8789| G
+  G -. explicit bridge mode only .-> C[Vendor service]
 ```
 
-The heater still asks for its normal cloud hostnames and destinations. The network redirects happen below the application layer, so no DNS or firmware setting needs to be changed on the module.
+## Modules
 
-## Components
+| File | Responsibility |
+| --- | --- |
+| `main.mjs` | Settings, services, serialized mutations, startup/shutdown |
+| `http.mjs` | Heater-facing requests, captures, local routing, bridge observation |
+| `local-service.mjs` | Observed lookup/metadata routes, local identity and reporting subscription |
+| `ans-protocol.mjs`, `ans-local.mjs` | Signed registration, encrypted packets, keepalive/probe, bounded notifications and session restoration |
+| `cloud.mjs` | Explicit upstream HTTP/UDP forwarding using an independent resolver |
+| `controller.mjs`, `store.mjs` | Command lifecycle, reports/faults, connection versus freshness, persistence |
+| `devices/`, `decoder.mjs`, `protocol.mjs` | Explicit model profile and verified packed-report/command formats |
+| `hot-water-estimate.mjs` | Separately labeled experimental heuristic |
+| `mqtt.mjs`, `discovery.mjs` | Retained reported state, non-retained commands, HA discovery |
+| `admin.mjs`, `web/` | Loopback UI/API and setting changes |
+| `journal.mjs` | Redacted or opt-in full private HTTP/UDP capture |
 
-### Packet-filter rules
+Commands are persisted before delivery, never automatically resent after an
+interruption, and confirmed only by subsequent matching telemetry. Fault updates
+never confirm a temperature command or make temperature telemetry fresh.
 
-`scripts/configure.mjs` writes `pf-local-only.generated.conf` for one heater address and one macOS interface. It redirects:
-
-| Original heater traffic | Local endpoint | Purpose |
-|---|---|---|
-| UDP destination port 53 | gateway UDP 1053 | Return the gateway address for IPv4 DNS questions |
-| TCP destination port 443 | gateway TCP 8443 | Terminate the heater's HTTPS connection |
-| UDP destination port 55055 | gateway UDP 15555 | Contain legacy Ayla notification traffic locally |
-
-DHCP is allowed. Other IPv4 traffic from the configured heater address is dropped.
-
-### TLS front end
-
-The `httpd:2.4.57-bullseye` container uses Apache 2.4 and OpenSSL 1.1.1. This combination and an RSA self-signed CA-style certificate were accepted by the tested legacy module. Apache proxies decrypted HTTP to the gateway container and never contacts an upstream server.
-
-The certificate is generated locally and ignored by Git. Its private key does not need to be installed on the heater or shared with anyone.
-
-### Gateway service
-
-The dependency-free Node service has three listeners:
-
-- HTTP 8080 inside Docker for heater device-service traffic;
-- UDP 5353 inside Docker for local DNS replies; and
-- UDP 55055 inside Docker as a non-forwarding ANS sink.
-
-Its separate administrative HTTP service listens on container port 8081 and is published to host loopback only.
-
-### State and command lifecycle
-
-State is stored in the `gateway-data` Docker volume. A local command moves through:
-
-```text
-queued -> delivered -> acknowledged -> confirmed
-```
-
-- `queued`: accepted by the local dashboard/API.
-- `delivered`: returned to a heater `/commands.xml` request.
-- `acknowledged`: the heater posted the command property back.
-- `confirmed`: a later telemetry block matches the requested value.
-
-Confirmation from telemetry matters because an HTTP 200 alone proves only message delivery, not that the physical controller applied the change.
+`/data/state.json` stores instance/device identity, latest reports, pending command
+and fault state. Other private files hold runtime settings and resumable ANS state.
+Keep the volume: this is not disposable cache. Mode changes restart the process,
+but do not force the physical heater to adopt different keys or account state.
 
 ## Trust boundaries
 
-- The dashboard/API has no authentication and is intentionally bound to `127.0.0.1`.
-- The TLS listener and UDP listeners must be reachable from the heater network.
-- The generated PF rule trusts a stable heater IPv4 address. Reserve that address in DHCP so it cannot be assigned to another client.
-- The gateway does not need A. O. Smith credentials.
-- The published code contains no upstream relay. Internet isolation is enforced by the network rule, not merely by application intent.
+The admin UI has no authentication and is loopback-only. A CSRF token protects
+state-changing browser requests, not access from an untrusted network. Heater
+TLS uses an old compatibility frontend and self-signed local certificate; isolate
+that LAN-facing service. MQTT TLS retains normal certificate verification.
+Device-ID binding is not a substitute for network isolation or a general-purpose
+authentication scheme. Do not expose heater endpoints to the Internet.
 
-## Current limitation: command latency
-
-The tested firmware uses an authenticated, stateful UDP notification service for immediate cloud commands. Replaying old notification datagrams did not work. With that service contained locally, the heater falls back to an HTTPS command poll roughly every five minutes. The gateway relies on that proven fallback.
-
-A future fast-wake implementation must be derived without embedding per-device secrets, relaying to Ayla, or weakening the local-only guarantee.
+Local mode does not construct an upstream resolver/client for normal device
+operation. Bridge mode is explicit and uses the real cloud. Router-level egress
+blocking is needed to prevent the appliance from bypassing DNS rewrites.

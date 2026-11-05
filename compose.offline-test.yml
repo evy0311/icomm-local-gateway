@@ -1,0 +1,7 @@
+# Use with compose.yml AND compose.test.yml in a disposable test project.
+# Blocks container egress; does not block the physical heater's internet access.
+# Docker images must already be available locally. An external MQTT broker is
+# not reachable from this network; use the bundled isolated test broker.
+networks:
+  default:
+    internal: true

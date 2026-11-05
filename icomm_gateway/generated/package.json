@@ -1,0 +1,20 @@
+{
+  "name": "icomm-mqtt",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local iCOMM device-service replacement with Home Assistant MQTT discovery",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "scripts": {
+    "start": "node src/main.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check src/main.mjs && node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "fast-xml-parser": "5.12.0",
+    "mqtt": "5.16.1"
+  }
+}

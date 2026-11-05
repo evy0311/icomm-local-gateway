@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>iCOMM Gateway</title><link rel="stylesheet" href="./app.css"><script src="./app.js" defer></script></head>
+<body>
+  <aside><a class="brand" href="#devices"><span>iCOMM<small>Local gateway</small></span></a>
+    <nav aria-label="Main navigation"><a href="#devices" data-nav="devices"><span data-icon="devices"></span><span>Devices</span></a><a href="#captures" data-nav="captures"><span data-icon="traffic"></span><span>Traffic & captures</span></a><a href="#settings" data-nav="settings"><span data-icon="settings"></span><span>Settings</span></a></nav>
+    <div class="sidebar-footer"><span class="dot good"></span> Local gateway<small>One heater per gateway instance</small></div>
+  </aside>
+  <div class="shell"><header><span>Water heater gateway</span><div id="connection" class="connection"><span class="dot"></span> Connecting</div></header><main id="main"><div class="empty">Loading your gateway…</div></main><footer>iCOMM Gateway · Experimental device support · Physical appliance controls remain available</footer></div>
+  <div id="toast" role="status" hidden></div>
+  <dialog id="event-dialog" aria-labelledby="exchange-title"><div class="dialog-head"><h2 id="exchange-title">Exchange details</h2><button id="close-dialog" class="icon-button" aria-label="Close"><span data-icon="close"></span></button></div><div id="event-details"></div></dialog>
+</body></html>

@@ -1,0 +1,11 @@
+.git
+node_modules
+.env
+certs
+data
+captures
+exports
+*.jsonl
+*.pcap
+*.pcapng
+*.tar.gz

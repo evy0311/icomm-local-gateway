@@ -1,0 +1,7 @@
+# Explicit opt-in for physical command testing with the private test broker.
+# Apply AFTER compose.test.yml. Default/test deployments remain read-only.
+# Fresh compatible telemetry is still required before any command is accepted.
+services:
+  gateway:
+    environment:
+      READ_ONLY: "false"

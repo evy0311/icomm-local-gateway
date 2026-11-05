@@ -1,12 +1,7 @@
 name: CI
-
-on:
-  push:
-  pull_request:
-
+on: [push, pull_request]
 permissions:
   contents: read
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -15,7 +10,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+      - run: npm ci
       - run: npm test
-      - run: npm run check
-      - run: docker compose config
-      - run: docker compose build
+      - run: node scripts/sync-ha-app.mjs --check
+      - run: git diff --check
+      - run: docker compose config --quiet
+      - run: sh scripts/test-docker.sh
+  app-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./icomm_gateway
+          platforms: linux/amd64,linux/arm64
+          push: false

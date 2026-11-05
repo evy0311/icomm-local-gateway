@@ -1,15 +1,20 @@
 {
-  "name": "icomm-local-gateway",
+  "name": "icomm-mqtt",
   "version": "0.1.0",
   "private": true,
-  "description": "Experimental local-only gateway for A. O. Smith iCOMM water heaters",
+  "description": "Local iCOMM device-service replacement with Home Assistant MQTT discovery",
   "type": "module",
-  "scripts": {
-    "test": "node --test",
-    "check": "node --check gateway.mjs && node --test"
-  },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "start": "node src/main.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check src/main.mjs && node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "fast-xml-parser": "5.12.0",
+    "mqtt": "5.16.1"
+  }
 }

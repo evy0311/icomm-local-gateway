@@ -1,0 +1,6 @@
+# Connect the physical gateway to Home Assistant's existing broker.
+# The private test broker override must not be included in this deployment.
+services:
+  gateway:
+    environment:
+      READ_ONLY: "false"

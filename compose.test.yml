@@ -1,0 +1,17 @@
+# Local test broker only. Its anonymous listener is NOT published on the LAN.
+services:
+  broker:
+    image: eclipse-mosquitto:2.0.22@sha256:09b62ff32c2e7b64d4b431b9a89236073289b68db273de2b089edeb9b0d92b5c
+    restart: unless-stopped
+    command: [mosquitto, -c, /mosquitto/config/test.conf]
+    ports:
+      - "127.0.0.1:${TEST_MQTT_PORT:-18884}:1883"
+    volumes:
+      - ./test/mosquitto.conf:/mosquitto/config/test.conf:ro
+  gateway:
+    environment:
+      MQTT_URL: mqtt://broker:1883
+      MQTT_USERNAME: ""
+      MQTT_PASSWORD: ""
+      READ_ONLY: "true"
+    depends_on: [broker]

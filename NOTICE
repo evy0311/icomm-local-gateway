@@ -1,0 +1,14 @@
+iCOMM MQTT incorporates protocol.mjs and decoder.mjs, their captured-vector tests,
+the certificate-generation configuration, and the legacy Apache compatibility
+configuration from the initial-research history of this repository,
+https://github.com/evy0311/icomm-local-gateway/tree/initial-research.
+
+Copyright (c) 2026 Evan Horsley. Licensed under the MIT License; see LICENSE.
+
+MQTT.js and its dependencies retain their own licenses in the installed packages.
+
+Interface craft workflow adapted from Unslop by Damir Sokolovsky (@heydamir),
+https://heydamir.design/unslop, licensed CC BY 4.0:
+https://creativecommons.org/licenses/by/4.0/ . The gateway interface applies
+an adapted graphite instrument-panel direction. Lucide icon paths are used
+under the ISC license: https://lucide.dev/license .

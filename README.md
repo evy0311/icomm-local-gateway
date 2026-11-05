@@ -1,197 +1,161 @@
 # iCOMM Local Gateway
 
-An experimental, local-first gateway for compatible A. O. Smith iCOMM water heaters. It receives and decodes heater telemetry, provides a browser dashboard, and delivers setpoint and Standard/Vacation commands without forwarding the heater's traffic to Ayla or the public Internet.
+Local control and monitoring for an A. O. Smith iCOMM water heater, with a web
+interface and Home Assistant MQTT discovery. The gateway replaces the heater's
+device-service and UDP notification endpoints on your own network.
 
-> **Early research release:** this is not an A. O. Smith product, not a Home Assistant integration yet, and not ready for unattended production use. It has been verified on one heater/firmware combination. Read the safety and compatibility notes before testing.
+**Tested hardware:** EE9-50H55DV-A, iCOMM ResElec3, firmware 1.8. Other models are
+not automatically supported. One gateway instance handles one heater.
 
-## What works today
+Local commands, telemetry, authenticated UDP notifications, leak fault reporting,
+and Home Assistant controls have been verified on that heater. A disposable,
+Internet-isolated synthetic fixture also verifies startup with fresh local keys.
+**First-time setup of a factory-fresh physical heater with all cloud access
+blocked has not been verified.** Existing field trials include a previously
+cloud-linked heater; a recovered session is not proof of cloud-free enrollment.
 
-- Fully local telemetry for setpoint, Standard/Vacation mode, and vacation duration.
-- Local setpoint control from 95–130°F (35–54.4°C), constrained to the observed appliance range.
-- Local Standard and 1–99 day Vacation mode control.
-- Command acknowledgement and confirmation from subsequent heater telemetry.
-- Automatic discovery of the Ayla numeric device ID from the heater's first request.
-- Local DNS interception, TLS termination, an ANS UDP sink, persistent state, and a small web dashboard.
-- No cloud credentials and no outbound Ayla relay in the published gateway.
-- A redacted diagnostics generator and structured GitHub issue templates for testing other heaters.
+The original implementation and research are preserved on
+[`initial-research`](https://github.com/evy0311/icomm-local-gateway/tree/initial-research).
+`main` contains the Docker/MQTT gateway developed from that protocol work.
 
-The verified heater uses a roughly five-minute fallback command poll when isolated from Ayla. A queued command may therefore wait 5–6 minutes before the heater retrieves it. Once retrieved, acknowledgement and confirming telemetry normally arrive within about a second. Reproducing the authenticated UDP wake-up for instant delivery remains open research.
+## What it provides
 
-Hot-water level and energy use are not decoded yet. They stay explicitly labeled as unknown rather than presenting guessed values.
+| Feature | Behavior |
+| --- | --- |
+| Target temperature | Reported setpoint and integer commands from 95–130°F |
+| Modes | Standard and Vacation; no invented Off/power command |
+| Vacation | Duration preference 1–99 days, plus independently reported remaining days |
+| Command lifecycle | Queued → delivered → acknowledged → confirmed by matching heater telemetry |
+| Cancel | Cancels only an undelivered command |
+| Wake / poll | Authenticated UDP notification asks the heater to fetch commands; it does not force fresh measurements |
+| Fault code | Last reported numeric code; 0 = none, 31 = water leak; other codes preserved |
+| Leak alert | Code 31 asserts a moisture binary sensor; code 0 clears it; other faults do not clear an active leak |
+| Hot-water estimate | Experimental 1–3 bar heuristic, explicitly provisional; **not** a confirmed manufacturer status |
+| Availability | Keeps last values while authenticated UDP is alive; tracks report age separately |
+| Diagnostics | Last report, command/error status, gateway mode, heater/UDP connection, read-only state |
+| Web UI | Device details, local target control, wake action, traffic inspection, and bridge/capture settings |
+| Diagnostic bridge | Explicitly opt-in forwarding to the real service, with local commands disabled |
 
-## Verified hardware
+MQTT discovery publishes **18 entities**. The setpoint is not an actual tank
+water-temperature measurement. Energy consumption, heating-element activity,
+valve control, and a verified LOW/MEDIUM/HIGH availability algorithm are not
+implemented. [Hot-water estimate assumptions](docs/hot-water-status-research.md).
 
-| Manufacturer | Model | Module family | Firmware | Result |
-|---|---|---|---|---|
-| A. O. Smith | EE9-50H55DV-A | iCOMM ResElec3 | 1.8 | Telemetry, setpoint, Standard, and Vacation verified |
+## Install: Home Assistant App or Docker
 
-Other iCOMM models may use different telemetry layouts or command frames. The gateway refuses commands until it has decoded a compatible telemetry report. See [testing a new heater](docs/testing-new-heaters.md) and [supported devices](docs/supported-devices.md).
+**Home Assistant OS/Supervisor:** add this repository under Settings → Apps →
+Install app → Repositories, then install **iCOMM Local Gateway**. Configure the
+MQTT options, keep read-only enabled initially, and open its authenticated Web UI.
+[Full Home Assistant App instructions](icomm_gateway/DOCS.md).
 
-## How it works
+[Add this repository to Home Assistant](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fevy0311%2Ficomm-local-gateway)
 
-The heater is placed on a network whose gateway you control. Narrow firewall rules redirect only that heater's DNS, HTTPS, and legacy Ayla Notification Service traffic to this project. Apache provides the older TLS behavior accepted by the tested Wi-Fi module. The Node service then:
+**Docker on Linux, OpenMediaVault, macOS or another server:** use the Compose
+steps below and [Setup from scratch](docs/setup-from-scratch.md). No HACS,
+Supervisor, or Home Assistant installation is needed to run the gateway; an MQTT
+broker is required. HA integration is optional.
 
-1. acknowledges the heater's device-service requests locally;
-2. decodes `superBlockDyn1` telemetry;
-3. queues a command selected in the dashboard;
-4. returns that command on the heater's next `/commands.xml` request; and
-5. confirms the result from the acknowledgement and subsequent telemetry.
+Both paths need a host/address with TCP80/443 and UDP55055 available. If another
+HA App already owns those ports, use Docker on a separate host/address.
 
-The local-only firewall rule drops every other IPv4 packet from the heater. See [architecture](docs/architecture.md) for ports, trust boundaries, and limitations.
+## Start here
 
-## Safety and privacy
+1. Follow [Setup from scratch](docs/setup-from-scratch.md) for host preparation,
+   MQTT, certificates, DNS, Wi-Fi setup, read-only checks, and enabling controls.
+2. Use [MQTT and Home Assistant](docs/mqtt.md) for entities, command topics,
+   availability, and notification examples.
+3. For another heater, follow [Adding device support](docs/adding-device-support.md).
+   Do not select the tested profile simply because a payload has the same length.
+4. See [Troubleshooting](docs/troubleshooting.md) and [Architecture](docs/architecture.md).
 
-- Water above 120°F (49°C) can scald. Follow the appliance manual and local requirements. The project's 130°F maximum is a protocol observation, not a safety recommendation.
-- Test only equipment and networks you own or are authorized to administer.
-- Keep the heater's physical controls accessible. Do not rely on this project for freeze protection, sanitation cycles, fault response, or any safety function.
-- The official app will show the heater as offline while it is fully isolated.
-- Do not publish your DSN, MAC address, Ayla device ID, account credentials, certificate private key, or unredacted packet captures.
-- The dashboard binds to `127.0.0.1` by default. Do not expose it to an untrusted network; it has no authentication.
-- The TLS front end intentionally uses an older compatibility image accepted by the tested legacy module. Keep port 8443 restricted to the isolated heater network and never publish it to the Internet.
+### Minimal Docker deployment
 
-## Quick start: macOS proof of concept
-
-This is the currently verified path. It uses macOS Internet Sharing, Docker Desktop, and a narrowly scoped PF anchor. A router/VLAN deployment should implement the same traffic flow, but exact router instructions are not yet included.
-
-### Prerequisites
-
-- macOS with an Ethernet Internet connection and Wi-Fi available for Internet Sharing
-- Docker Desktop with Compose
-- Node.js 20 or newer (only for configuration, tests, and diagnostics)
-- OpenSSL
-- the heater's IPv4 address on the shared network
-
-Aggressive LAN scanners can overwhelm some consumer networks. Prefer the router/DHCP client list or compare `arp -a` before and after enabling the heater's Wi-Fi. The tested Murata radio appeared as the heater after its Wi-Fi was toggled.
-
-### 1. Clone and prepare
+Requires Docker with Compose v2, OpenSSL, and a reachable MQTT broker. Download
+images/dependencies before attempting an Internet-isolated installation.
 
 ```sh
 git clone https://github.com/evy0311/icomm-local-gateway.git
 cd icomm-local-gateway
-./scripts/generate-cert.sh
-node scripts/configure.mjs
+cp .env.example .env
+chmod 600 .env
+# Edit .env: reserve and set BIND_IP, MQTT_URL and dedicated MQTT credentials.
+# Keep READ_ONLY=true and GATEWAY_MODE=local for the first checks.
+sh scripts/generate-cert.sh
+sh scripts/deploy.sh YOUR_DOCKER_HOST_LAN_IP -f compose.yml
 ```
 
-The configurator asks for:
+Open **http://127.0.0.1:8789/** on that Docker host. The dashboard is loopback-only
+and unauthenticated. On a remote server, use an SSH tunnel or an authenticated
+proxy; do not publish the admin port directly to your LAN or the Internet.
 
-- the heater IPv4 address;
-- the Mac's address on the heater network (often `192.168.2.1` with Internet Sharing); and
-- the Internet Sharing interface (often `bridge100`).
+The heater needs the host's **TCP 443, TCP 80, and UDP 55055**. DNS changes the
+address, not the port. Reserve a separate host/LAN address if these ports conflict
+with another service. Rewrite the exact device-service hostname observed from
+that heater and `ans-field.aylanetworks.com` to the Docker host's LAN IPv4 address.
+See the setup guide before reconnecting the heater.
 
-It creates two ignored files: `.env` and `pf-local-only.generated.conf`. Review both before continuing. It does not need your A. O. Smith email or password.
+After verifying compatible reports, set `READ_ONLY=false` and recreate the
+stack. Alternatively `-f compose.yml -f compose.ha.yml` explicitly enables controls.
+Never combine the HA deployment with `compose.test.yml`: the test override selects
+its private broker and removes MQTT credentials.
 
-### 2. Start the gateway
+## Local operation and its boundaries
 
-```sh
-docker compose up -d --build
-docker compose ps
-```
+In local mode the service does not forward heater requests to the vendor. It
+answers supported startup/identity exchanges, supplies the observed reporting
+subscription, serves command polls, and maintains authenticated UDP notifications.
+Local enrollment generates its own keys; raw cloud captures are not distributed
+or required as installation files.
 
-Apache may warn that the certificate is a CA certificate or does not match its server name. Those warnings are expected for the deliberately old-style certificate used by the tested module.
+DNS rewrites alone cannot prevent cached public addresses, alternate DNS, or IPv6
+from bypassing the gateway. For a genuinely offline installation, block the
+**heater's Internet egress** while allowing DHCP, your DNS server, and the gateway.
+Local mode cannot enforce router/firewall policy. A laptop that sleeps is a poor
+long-term host: it also stops answering heater keepalives.
 
-### 3. Load the heater-only redirects
+Bridge mode deliberately uses the cloud and is only for diagnostics. Switching
+modes does not automatically renegotiate a heater's existing identity or UDP key.
+A session established with the other endpoint may need a Wi-Fi reconnect; do not
+keep resetting a heater before checking host reachability and captured traffic.
 
-```sh
-sudo pfctl -a com.apple/icomm-local-gateway -f ./pf-local-only.generated.conf
-sudo pfctl -k HEATER_IP
-```
+This is experimental appliance software, not a safety controller. The physical
+controls, built-in alarms, and manufacturer safety instructions remain authoritative.
 
-Replace `HEATER_IP` with the exact address entered into the configurator. `pfctl` may display a standard warning about loading rules; the rules are placed in a dedicated anchor and target only that one source address.
+## Data, privacy, and updates
 
-If the heater does not reconnect, toggle its Wi-Fi off and on using its control panel. Avoid interrupting power while the heater is actively heating unless the appliance manual says it is safe.
+Keep the `gateway-data` volume and `certs/` directory. The volume contains device
+identity, settings, reported state, and private resumable-session material. Never
+copy it between unrelated heaters or erase it to perform a software update.
+Pending commands are marked interrupted on restart and are never automatically replayed.
 
-### 4. Verify telemetry and isolation
+`CAPTURE_MODE=redacted` is the default. Opt-in `full` captures preserve complete
+HTTP headers/bodies and UDP bytes and can contain credentials. Keep all captures,
+`.env`, keys, device identifiers, and backups private. The UI shows only the newest
+100 events; journal rotation does not delete older files. Monitor disk use.
+See [SECURITY.md](SECURITY.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Follow the service log:
-
-```sh
-docker compose logs -f
-```
-
-A compatible heater should eventually produce lines similar to:
-
-```text
-telemetry setpoint=120F mode=STANDARD
-local POST /devices/<device>/properties/superBlockDyn1/datapoints.xml -> 200
-```
-
-Open [http://localhost:8788](http://localhost:8788). Before sending a command, verify that the displayed setpoint and mode match the physical heater.
-
-Confirm that no traffic from the heater reaches a public address:
-
-```sh
-sudo tcpdump -i bridge100 -n 'host HEATER_IP'
-```
-
-You should see local redirected traffic, DHCP, and retries—not a completed conversation with an Internet host.
-
-### 5. Try one conservative command
-
-Choose a setpoint one degree away from the current value. The dashboard will show `queued`, then `delivered`/`acknowledged`, and finally `confirmed`. Allow 5–6 minutes for the fallback poll. Verify the result on the physical control panel.
-
-If you need to abandon a queued command, use **Cancel pending command** before the heater retrieves it.
-
-### Stop and restore normal networking
-
-```sh
-sudo pfctl -a com.apple/icomm-local-gateway -F all
-docker compose down
-```
-
-Then reconnect the heater to its normal Wi-Fi if desired. Removing the PF anchor is essential before expecting the official cloud app to work again.
-
-For a detailed walkthrough, see [macOS setup](docs/macos-setup.md). For failures, see [troubleshooting](docs/troubleshooting.md).
-
-## Local API
-
-The dashboard uses a small unauthenticated loopback API:
-
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/health` | Container health check |
-| `GET` | `/api/state` | Current decoded state and command status |
-| `POST` | `/api/desired-setpoint` | Queue `{ "fahrenheit": 120 }` |
-| `POST` | `/api/desired-mode` | Queue `{ "mode": "STANDARD" }` or `{ "mode": "VACATION", "days": 7 }` |
-| `POST` | `/api/cancel-command` | Cancel a command that has not been retrieved |
-
-Example:
-
-```sh
-curl -sS -H 'content-type: application/json' \
-  --data '{"fahrenheit":120}' \
-  http://127.0.0.1:8788/api/desired-setpoint
-```
-
-Do not expose port 8788 beyond localhost without adding authentication and transport security.
-
-## Testing another heater
-
-Please help map compatibility, but begin read-only:
-
-1. Follow the setup through telemetry reception.
-2. Confirm the dashboard exactly matches the physical setpoint and mode.
-3. Generate a sanitized diagnostic bundle with `node scripts/collect-diagnostics.mjs`.
-4. Review the file manually.
-5. Open a **Device compatibility report** using the GitHub issue template.
-
-Never attach `.env`, anything under `certs/`, or an unredacted `.pcap`. Detailed steps and a safe test matrix are in [testing a new heater](docs/testing-new-heaters.md).
+For updates, back up the volume and certificates, pull `main`, and rerun the
+same deployment command, from the same directory with the same Compose project
+name. The included project name is `icomm-mqtt`; keeping it preserves volume identity.
+An installation of `initial-research` uses a different implementation: back it up
+and follow the new setup guide rather than assuming its state schema is compatible.
+Do not run both implementations against the same heater at once.
 
 ## Development
 
-There are no runtime npm dependencies. Run the checks with:
-
 ```sh
+npm ci
 npm test
 npm run check
-docker compose config
+docker compose config --quiet
 ```
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request. Protocol observations and known command frames are documented in [docs/protocol.md](docs/protocol.md).
+[Development and disposable Docker tests](docs/development.md) cover the real
+TLS/MQTT and Internet-isolated synthetic startup checks. Never inject fixture
+traffic into an instance that has learned a real heater.
 
-## Project direction
+Standalone Docker Compose and the experimental Home Assistant App are supported
+installation paths. HACS is not used. MQTT connects either to an existing broker;
+an additional production broker is unnecessary.
 
-The first milestone is a reliable, auditable local gateway. Planned work includes broader device compatibility, labeled hot-water/energy fields, faster authenticated local notification, a router-friendly deployment, authentication, and eventually a HACS/Home Assistant integration. See the [roadmap](docs/roadmap.md).
-
-## License and trademarks
-
-MIT licensed. A. O. Smith, iCOMM, Ayla, and related marks belong to their respective owners. This independent project is not affiliated with or endorsed by A. O. Smith or Ayla Networks.
+MIT licensed. See [NOTICE](NOTICE) for protocol, UI-workflow, and icon attribution.
