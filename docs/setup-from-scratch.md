@@ -234,3 +234,34 @@ Use a separate instance/volume for that test; do not destroy the working owner's
 state. The disposable [offline fixture](development.md) covers fresh local keys
 and protocol exchanges with container egress disabled, not the physical radio's
 persistent identity or every firmware's provisioning behavior.
+
+
+## Port conflicts and deployment choices
+
+The same port can be used on different machines/IP endpoints. For example, the
+HA host can keep its existing services while a separate Linux VM serves the
+heater at that VM's own reserved LAN address. Install Docker/Compose inside the
+VM and use this guide unchanged; the gateway still publishes to HA's existing
+MQTT broker. DNS rewrites point to the VM, not the HA host. This is the simplest
+way to avoid sharing the heater's fixed ports with an existing HA App.
+
+A separate always-on Linux Docker machine is equivalent, provided its chosen
+address has ports80/443 and UDP55055 free. OpenMediaVault's web interface often
+already uses80, so moving the stack to OMV's existing IP does not automatically
+resolve the conflict.
+
+An advanced option on a Linux Docker host is macvlan (or an appropriately designed
+ipvlan network): containers can have independent LAN addresses. The supplied
+Compose stack uses two services; any custom network design must account for
+both the TLS frontend and HTTP/UDP gateway, their private inter-service route,
+and admin access. Merely setting BIND_IP to an unused address does not assign
+that address to a host or create macvlan networking. Docker Desktop on Mac/Windows
+does not support macvlan. Macvlan also blocks container-to-host communication by
+default, requiring an additional path if the broker/admin endpoint is on that host.
+See [Docker's macvlan documentation](https://docs.docker.com/engine/network/drivers/macvlan/).
+
+Changing the HA App's published443 port to8443 alone cannot work: ordinary DNS
+rewrites convey an IP, not a port, and the heater still connects to443. A
+client-specific router NAT rule could translate the destination port if the router
+supports that, but it is not part of this setup and is less portable. Do not assume
+a Deco router supports such LAN-to-LAN rules without verifying the exact model.

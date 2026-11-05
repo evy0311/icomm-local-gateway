@@ -49,6 +49,12 @@ Do not stop another working App blindly. Use the standalone Docker deployment
 on a different host/address when the HA ports are occupied. Remapping443 does
 not make the heater connect to that new port.
 
+For an occupied HA host, the recommended alternative is Docker Compose in a
+small Linux VM with its own reserved LAN IP (or a separate host with free ports).
+It still uses HA's MQTT broker. OMV's own web UI may also occupy80, so check its
+ports before moving there. See [deployment choices](../docs/setup-from-scratch.md#port-conflicts-and-deployment-choices)
+for VM and advanced Linux macvlan considerations.
+
 Select **Open Web UI** or **Show in sidebar**. The admin UI is available only via
 HA-authenticated ingress; it has no direct host port mapping. Its backend rejects
 requests not from Supervisor's ingress address. Heater-facing ports remain separate

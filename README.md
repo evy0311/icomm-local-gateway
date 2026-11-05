@@ -48,7 +48,7 @@ Install app → Repositories, then install **iCOMM Local Gateway**. Configure th
 MQTT options, keep read-only enabled initially, and open its authenticated Web UI.
 [Full Home Assistant App instructions](icomm_gateway/DOCS.md).
 
-[Add this repository to Home Assistant](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fevy0311%2Ficomm-local-gateway)
+[![Add repository to Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fevy0311%2Ficomm-local-gateway)
 
 **Docker on Linux, OpenMediaVault, macOS or another server:** use the Compose
 steps below and [Setup from scratch](docs/setup-from-scratch.md). No HACS,
@@ -57,6 +57,11 @@ broker is required. HA integration is optional.
 
 Both paths need a host/address with TCP80/443 and UDP55055 available. If another
 HA App already owns those ports, use Docker on a separate host/address.
+A small Linux VM with its own LAN IP is a straightforward option: the gateway
+uses that VM's ports, and MQTT still connects it to Home Assistant. On Linux,
+macvlan networking is an advanced alternative for giving a container a separate
+LAN address; it is not part of the supplied Compose configuration. See
+[port conflicts and deployment choices](docs/setup-from-scratch.md#port-conflicts-and-deployment-choices).
 
 ## Start here
 
