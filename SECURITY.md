@@ -8,7 +8,7 @@ Include a concise impact statement, affected version/commit, reproduction steps 
 
 ## Deployment assumptions
 
-- The dashboard is unauthenticated and must remain bound to loopback unless an operator adds an authenticated reverse proxy.
+- The dashboard is unauthenticated and defaults to loopback. Operators may explicitly enable trusted-LAN access with STATUS_BIND_IP or use an authenticated reverse proxy. Do not expose it to the Internet.
 - The pinned Apache/OpenSSL compatibility image is intentionally old. Its TLS port must be reachable only from the isolated heater network and never from the public Internet.
 - The heater should be placed on an isolated network with explicit egress blocking.
 - The generated private key stays local and must never be committed.

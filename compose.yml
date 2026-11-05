@@ -20,7 +20,7 @@ services:
     volumes:
       - gateway-data:/data
     ports:
-      - "127.0.0.1:${STATUS_PORT:-8789}:8081"
+      - "${STATUS_BIND_IP:-127.0.0.1}:${STATUS_PORT:-8789}:8081"
       - "${BIND_IP:-127.0.0.1}:${HTTP_PORT:-80}:8082"
       - "${BIND_IP:-127.0.0.1}:${ANS_PORT:-55055}:55055/udp"
     healthcheck:

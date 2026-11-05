@@ -70,8 +70,10 @@ Open `http://127.0.0.1:8789/` on the host. For a remote server:
 ssh -N -L 8789:127.0.0.1:8789 YOUR_SERVER_LOGIN@YOUR_DOCKER_HOST
 ```
 
-Then open that same loopback URL on your computer. This admin UI has no login;
-keep its default loopback binding. In Settings, deployment defaults apply unless
+Then open that same loopback URL on your computer. To access the UI directly
+on a trusted LAN instead, set `STATUS_BIND_IP=YOUR_MANAGEMENT_LAN_IP` in `.env`,
+recreate the gateway, and open `http://YOUR_MANAGEMENT_LAN_IP:8789/`. This is an
+explicit opt-in to the unauthenticated UI; the default remains loopback. In Settings, deployment defaults apply unless
 saved UI overrides exist. UI mode/cloud-host/capture settings take precedence
 over `.env`; **Use deployment defaults** removes those overrides.
 

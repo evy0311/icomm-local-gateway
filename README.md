@@ -90,8 +90,11 @@ sh scripts/deploy.sh YOUR_DOCKER_HOST_LAN_IP -f compose.yml
 ```
 
 Open **http://127.0.0.1:8789/** on that Docker host. The dashboard is loopback-only
-and unauthenticated. On a remote server, use an SSH tunnel or an authenticated
-proxy; do not publish the admin port directly to your LAN or the Internet.
+and unauthenticated by default. For direct trusted-LAN access, set
+`STATUS_BIND_IP` to the VM's management LAN IP in `.env`, recreate the stack,
+and open `http://YOUR_MANAGEMENT_IP:8789/`. This explicitly enables LAN access
+to the existing unauthenticated UI. Alternatively use an SSH tunnel or an
+authenticated proxy for remote access.
 
 The heater needs the host's **TCP 443, TCP 80, and UDP 55055**. DNS changes the
 address, not the port. Reserve a separate host/LAN address if these ports conflict
